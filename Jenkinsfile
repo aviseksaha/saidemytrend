@@ -43,11 +43,11 @@ pipeline {
 				script {
 					echo '<---------------------jar publish started--------------------->'
 					
-					def server = Artifactory.newServer url: registry + "/artifactory" + credentialsId : "artifact-cred"
+					def server = Artifactory.newServer url: registry + "/artifactory" , credentialsId: "artifact-cred"
 					
 					def properties = "buildid = ${env.BUILD_ID}, commitid = ${GIT_COMMIT}"
 					
-					def uploadSpec = " " "{
+					def uploadSpec = """{
 						"files" : [
 							{
 							"pattern" : "jarstaging/(*)",
@@ -57,7 +57,7 @@ pipeline {
 							"exclusions" : ["*.sha1", "*.md5"]
 							}
 						]
-					}" " "
+					}"""
 					def buildInfo = server.upload(uploadSpec)
 					buildInfo.env.collect()
 					
@@ -67,6 +67,7 @@ pipeline {
 				}
 			}
 		}
-				
+		
     }
 }
+
