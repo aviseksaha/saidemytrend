@@ -1,3 +1,5 @@
+def registry = "https://avisekproject1.jfrog.io"
+
 pipeline {
     agent any
 	
@@ -28,7 +30,7 @@ pipeline {
                 timeout(time: 1, unit: 'HOURS') { 
                     script {
                         def qualityGate = waitForQualityGate() 
-                        if (qualityGate.status == 'OK') {
+                        if (qualityGate.status != 'OK') {
                             //error "Pipeline failed due to quality gate failure: ${qualityGate.status}"
 							echo "Warning: Quality gate partially passed but continuing pipeline:${qualityGate.status}"
                         }
@@ -36,6 +38,35 @@ pipeline {
                 }
             }
 		}
+		stage('Jar publish') {
+			steps {
+				script {
+					echo '<---------------------jar publish started--------------------->'
+					
+					def server = Artifactory.newServer url: registry + "/artifactory" + credentialsId : "artifact-cred"
+					
+					def properties = "buildid = ${env.BUILD_ID}, commitid = ${GIT_COMMIT}"
+					
+					def uploadSpec = " " "{
+						"files" : [
+							{
+							"pattern" : "jarstaging/(*)",
+							"target" : "aviseksaha-libs-release-local/{1}",
+							"flat" : "false",
+							"props" : "${properties}",
+							"exclusions" : ["*.sha1", "*.md5"]
+							}
+						]
+					}" " "
+					def buildInfo = server.upload(uploadSpec)
+					buildInfo.env.collect()
+					
+					server.publishBuildInfo(buildInfo)
+				
+					echo '<---------------------jar publish ended--------------------->'
+				}
+			}
+		}
+				
     }
 }
-
